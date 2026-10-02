@@ -83,6 +83,15 @@ export interface ValidationReport {
   scope: string
   warnings: ValidationIssue[]
   errors: ValidationIssue[]
+  /** Per-resource tally, present when several resources were validated together. */
+  summary?: ValidationSummaryCounts
+}
+
+export interface ValidationSummaryCounts {
+  resourcesChecked: number
+  passed: number
+  withWarnings: number
+  rejected: number
 }
 
 export interface ApiEnvelope<T> {

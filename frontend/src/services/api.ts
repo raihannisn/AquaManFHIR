@@ -59,6 +59,7 @@ export interface ValidationReport {
   scope: string
   warnings: ValidationIssue[]
   errors: ValidationIssue[]
+  summary?: { resourcesChecked: number; passed: number; withWarnings: number; rejected: number }
 }
 
 export interface FhirResource {

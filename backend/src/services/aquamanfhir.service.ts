@@ -95,5 +95,11 @@ function combineReports(reports: ValidationReport[]): ValidationReport {
     scope: reports[0]?.scope ?? 'FHIR R4 base resource schemas and AquaManFHIR data-quality checks; terminology and OAH profiles are not validated.',
     warnings,
     errors,
+    summary: {
+      resourcesChecked: reports.length,
+      passed: reports.filter((report) => report.errors.length === 0 && report.warnings.length === 0).length,
+      withWarnings: reports.filter((report) => report.errors.length === 0 && report.warnings.length > 0).length,
+      rejected: reports.filter((report) => report.errors.length > 0).length,
+    },
   }
 }

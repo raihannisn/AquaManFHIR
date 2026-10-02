@@ -71,3 +71,19 @@ describe('OneAquaHealth normalization and FHIR mapping', () => {
     expect(validateFhirResource({ resourceType: 'Location', id: 'C1', name: 'Site', status: 'not-a-location-status' }).errors).toContainEqual(expect.objectContaining({ code: 'FHIR_R4_SCHEMA' }))
   })
 })
+
+describe('Validation summary', () => {
+  it('tallies resources by outcome so warnings and rejections are not conflated', async () => {
+    const adapter = new OahAdapter()
+    vi.spyOn(adapter, 'getSnapshot').mockResolvedValue(snapshot)
+    const service = new AquaManFhirService(new NormalizationService(adapter))
+    const converted = await service.convertSite('C1')
+    const summary = converted?.validation.summary
+
+    expect(summary).toBeDefined()
+    expect(summary!.resourcesChecked).toBe(converted!.resources.length)
+    expect(summary!.passed + summary!.withWarnings + summary!.rejected).toBe(summary!.resourcesChecked)
+    expect(summary!.rejected).toBe(0)
+    expect(summary!.withWarnings).toBeGreaterThan(0)
+  })
+})

@@ -49,16 +49,22 @@ export function JsonViewer({ value, filename }: { value: unknown; filename?: str
 
 export function ValidationSummary({ report }: { report: ValidationReport }) {
   const variant = report.status === 'INVALID' ? 'danger' : report.warnings.length ? 'warning' : 'success'
-  const issueCounts = new Map<string, { issue: ValidationReport['warnings'][number]; count: number }>()
-  for (const issue of [...report.errors, ...report.warnings]) {
-    const current = issueCounts.get(issue.code)
-    issueCounts.set(issue.code, { issue, count: (current?.count ?? 0) + 1 })
+  type Issue = ValidationReport['warnings'][number]
+  const groups = new Map<string, { issue: Issue; count: number; severity: 'error' | 'warning' }>()
+  for (const [list, severity] of [[report.errors, 'error'], [report.warnings, 'warning']] as const) {
+    for (const issue of list) {
+      const key = `${severity}:${issue.code}`
+      const current = groups.get(key)
+      groups.set(key, { issue, severity, count: (current?.count ?? 0) + 1 })
+    }
   }
   return <div className={`validation-summary validation-${variant}`}>
     <div className="d-flex align-items-center justify-content-between gap-2"><strong>{report.status}</strong><span className="validation-counts">{report.errors.length} errors · {report.warnings.length} warnings</span></div>
     <div className="validation-scope">{report.scope}</div>
-    {[...issueCounts.values()].map(({ issue, count }) => <div className="validation-issue" key={issue.code}><span className="issue-code">{issue.code}{count > 1 ? ` × ${count}` : ''}</span><span>{issue.message}</span></div>)}
+    {[...groups.entries()].map(([key, { issue, count, severity }]) => <div className={`validation-issue issue-${severity}`} key={key}>
+      <span className="issue-code">{severity === 'error' ? 'ERROR' : 'WARN'} · {issue.code}{count > 1 ? ` × ${count}` : ''}</span>
+      <span>{issue.message}{count === 1 && issue.path ? <code className="issue-path"> {issue.path}</code> : null}</span>
+    </div>)}
     {report.errors.length === 0 && report.warnings.length === 0 && <div className="validation-issue">All implemented structural checks passed.</div>}
   </div>
 }
-

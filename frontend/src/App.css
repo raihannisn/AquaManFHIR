@@ -378,3 +378,25 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ---- Validation scorecard + playground ---- */
+.rule-err { background: #c9564b; }
+.quality-bar { display: flex; height: 8px; margin-top: 12px; overflow: hidden; border-radius: 4px; background: #e9eeeb; }
+.quality-bar span { display: block; height: 100%; }
+.qb-pass { background: #4fa583; }
+.qb-warn { background: #d9a73d; }
+.qb-fail { background: #c9564b; }
+.quality-note { margin: 8px 0 0; color: #74827e; font-size: 10px; line-height: 1.5; }
+.issue-error .issue-code { color: #a84b43; font-weight: 600; }
+.issue-warning .issue-code { color: #8d7a51; }
+.issue-path { padding: 0 3px; border-radius: 3px; color: #6c5a33; background: rgba(0,0,0,.04); font-size: 8px; }
+.playground-icon { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 6px; color: #2a7c70; background: #e9f3f1; }
+.playground-lead { margin: -4px 0 12px; color: #6f7f7b; font-size: 11px; line-height: 1.5; }
+.preset-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.preset-chip { padding: 5px 10px; border: 1px solid #dbe4df; border-radius: 999px; color: #4d6660; background: #fff; font-size: 10px; cursor: pointer; transition: background .15s, border-color .15s; }
+.preset-chip:hover { border-color: #7fc2b4; background: #f3faf8; }
+.preset-chip.active { border-color: #218e82; color: #fff; background: #218e82; }
+.playground-note { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; color: #5d726d; font-size: 10px; }
+.playground-editor { width: 100%; min-height: 260px; padding: 10px; border: 1px solid #d9e3de; border-radius: 6px; color: #2c4b46; background: #f7faf8; font-family: var(--mono); font-size: 10px; line-height: 1.5; resize: vertical; }
+.playground-editor:focus { border-color: #218e82; outline: 0; box-shadow: 0 0 0 3px rgba(33,142,130,.12); }
+.playground-empty { padding: 18px; border: 1px dashed #d3ddd8; border-radius: 6px; color: #8a9893; font-size: 10px; line-height: 1.5; }
