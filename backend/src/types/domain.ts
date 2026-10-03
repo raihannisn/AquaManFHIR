@@ -34,6 +34,7 @@ export interface OahSnapshot {
   urbanParameters: OahMetricRecord[]
   sourceErrors: OahSourceError[]
   retrievedAt: string
+  isCached?: boolean
 }
 
 export interface NormalizedSite {
@@ -83,6 +84,15 @@ export interface ValidationReport {
   scope: string
   warnings: ValidationIssue[]
   errors: ValidationIssue[]
+  /** Per-resource tally, present when several resources were validated together. */
+  summary?: ValidationSummaryCounts
+}
+
+export interface ValidationSummaryCounts {
+  resourcesChecked: number
+  passed: number
+  withWarnings: number
+  rejected: number
 }
 
 export interface ApiEnvelope<T> {

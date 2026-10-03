@@ -28,6 +28,13 @@ function issue(code: string, message: string, path?: string): ValidationIssue {
   return { code, message, ...(path ? { path } : {}) }
 }
 
+function hasObservationIndicator(value: unknown): boolean {
+  if (!isObject(value)) return false
+  if (typeof value.text === 'string' && value.text.trim()) return true
+  return Array.isArray(value.coding) && value.coding.some((coding) =>
+    isObject(coding) && typeof coding.code === 'string' && coding.code.trim().length > 0)
+}
+
 export function validateFhirResource(resource: unknown): ValidationReport {
   const errors: ValidationIssue[] = []
   const warnings: ValidationIssue[] = []
@@ -66,7 +73,7 @@ export function validateFhirResource(resource: unknown): ValidationReport {
 
   if (current.resourceType === 'Observation') {
     if (typeof current.status !== 'string' || !observationStatuses.has(current.status)) errors.push(issue('INVALID_STATUS', 'Observation.status is required and must use an allowed R4 code.', 'status'))
-    if (!isObject(current.code) || (typeof current.code.text !== 'string' && !Array.isArray(current.code.coding))) errors.push(issue('MISSING_INDICATOR', 'Observation.code must contain text or coding.', 'code'))
+    if (!hasObservationIndicator(current.code)) errors.push(issue('MISSING_INDICATOR', 'Observation.code must contain text or a coding with a code value.', 'code'))
     if (!isObject(current.valueQuantity) || typeof current.valueQuantity.value !== 'number' || !Number.isFinite(current.valueQuantity.value)) errors.push(issue('INVALID_VALUE', 'AquaManFHIR Observation.valueQuantity.value must be a finite number.', 'valueQuantity.value'))
     if (!isObject(current.subject) || typeof current.subject.reference !== 'string' || !/^Location\/[A-Za-z0-9.-]{1,64}$/.test(current.subject.reference)) errors.push(issue('MISSING_SITE', 'Observation.subject must reference a FHIR Location.', 'subject.reference'))
     if (current.effectiveDateTime !== undefined && (typeof current.effectiveDateTime !== 'string' || !fhirDateTimePattern.test(current.effectiveDateTime) || Number.isNaN(Date.parse(current.effectiveDateTime)))) errors.push(issue('INVALID_EFFECTIVE_DATE', 'Observation.effectiveDateTime must be a valid FHIR dateTime; time values require a timezone.', 'effectiveDateTime'))

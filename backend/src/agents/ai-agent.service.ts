@@ -1,13 +1,13 @@
 import { GoogleGenAI, Type, type Content, type FunctionDeclaration } from '@google/genai'
 
-const systemInstruction = `You are AquaManFHIR's OneAquaHealth data agent for researchers and data stewards. Use backend tool results for every factual claim. Never invent measurements, locations, units, dates, resource IDs, or validation results. Preserve source identifiers where relevant. If data is unavailable, say "No data is available from the connected source for that request." Keep the final answer concise and directly answer the question; avoid repeated site metadata and long commentary. Use short section headings or simple lists only when they improve scanning. Do not include tool logs or a source dump in the answer because the interface displays those separately. Never use Markdown code fences, expose hidden reasoning, provide diagnosis, or make clinical recommendations.`
+const systemInstruction = `You are AquaManFHIR's OneAquaHealth data agent for researchers and data stewards. Use backend tool results for every factual claim. Never invent measurements, locations, units, dates, resource IDs, or validation results. Preserve source identifiers where relevant. If any tool result has isCached=true, explicitly state that the data is from a cached snapshot retrieved at its reported retrievedAt time and that the live source is unreachable; never describe cached data as live, current, or latest. If data is unavailable, say "No data is available from the connected source for that request." Keep the final answer concise and directly answer the question; avoid repeated site metadata and long commentary. Use short section headings or simple lists only when they improve scanning. Do not include tool logs or a source dump in the answer because the interface displays those separately. Never use Markdown code fences, expose hidden reasoning, provide diagnosis, or make clinical recommendations.`
 
 const functionDeclarations: FunctionDeclaration[] = [
   { name: 'getSites', description: 'List research sites available from the connected OneAquaHealth source.', parameters: { type: Type.OBJECT, properties: {} } },
   { name: 'getSite', description: 'Get one research site and its raw source records.', parameters: { type: Type.OBJECT, properties: { siteId: { type: Type.STRING } }, required: ['siteId'] } },
   { name: 'getObservations', description: 'Get normalized environmental observations for a site.', parameters: { type: Type.OBJECT, properties: { siteId: { type: Type.STRING } }, required: ['siteId'] } },
   { name: 'getCitizenObservations', description: 'Check whether connected citizen-science observations are available for a site.', parameters: { type: Type.OBJECT, properties: { siteId: { type: Type.STRING } }, required: ['siteId'] } },
-  { name: 'getFHIRResources', description: 'Generate and return FHIR resources from live source data for a site.', parameters: { type: Type.OBJECT, properties: { siteId: { type: Type.STRING } }, required: ['siteId'] } },
+  { name: 'getFHIRResources', description: 'Generate and return FHIR resources from the available OAH snapshot for a site. Results identify whether the snapshot is cached.', parameters: { type: Type.OBJECT, properties: { siteId: { type: Type.STRING } }, required: ['siteId'] } },
   { name: 'validateFHIR', description: 'Validate a generated FHIR resource by ID.', parameters: { type: Type.OBJECT, properties: { resourceId: { type: Type.STRING } }, required: ['resourceId'] } },
   { name: 'getValidationReport', description: 'Return the validation report for a generated FHIR resource by ID.', parameters: { type: Type.OBJECT, properties: { resourceId: { type: Type.STRING } }, required: ['resourceId'] } },
   { name: 'createFHIRBundle', description: 'Create a FHIR collection Bundle for a site.', parameters: { type: Type.OBJECT, properties: { siteId: { type: Type.STRING } }, required: ['siteId'] } },
@@ -49,8 +49,18 @@ export class GeminiProviderError extends Error {
     super(message)
     this.name = 'GeminiProviderError'
     this.status = isTemporarilyUnavailable ? 503 : 502
-    this.diagnostic = providerMessage.replace(/AIza[0-9A-Za-z_-]{20,}/g, '[REDACTED]')
+    this.diagnostic = redactProviderSecrets(providerMessage)
   }
+}
+
+export function redactProviderSecrets(providerMessage: string): string {
+  const configuredKey = process.env.GEMINI_API_KEY
+  const exactKeyRedacted = configuredKey
+    ? providerMessage.split(configuredKey).join('[REDACTED]')
+    : providerMessage
+  return exactKeyRedacted
+    .replace(/\bAIza[0-9A-Za-z_-]{20,}\b/g, '[REDACTED]')
+    .replace(/\bAQ\.[A-Za-z0-9_-]{20,}\b/g, '[REDACTED]')
 }
 
 function errorMessage(error: unknown): string {

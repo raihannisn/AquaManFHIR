@@ -59,6 +59,7 @@ export interface ValidationReport {
   scope: string
   warnings: ValidationIssue[]
   errors: ValidationIssue[]
+  summary?: { resourcesChecked: number; passed: number; withWarnings: number; rejected: number }
 }
 
 export interface FhirResource {
@@ -72,6 +73,7 @@ export interface SiteListData {
   recordCounts: { cities: number; sites: number; healthRiskRecords: number; urbanParameterRecords: number }
   retrievedAt: string
   sourceErrors: Array<{ endpoint: string; message: string }>
+  isCached: boolean
 }
 
 export interface SiteDetailData {
@@ -79,24 +81,28 @@ export interface SiteDetailData {
   raw: { healthRisk?: Record<string, unknown>; urbanParameters?: Record<string, unknown> }
   retrievedAt: string
   sourceErrors: Array<{ endpoint: string; message: string }>
+  isCached: boolean
 }
 
 export interface ObservationData {
   items: Observation[]
   retrievedAt: string
   sourceErrors: Array<{ endpoint: string; message: string }>
+  isCached: boolean
 }
 
 export interface ConversionData {
   resources: FhirResource[]
   normalized: Observation[]
   validation: ValidationReport
+  isCached: boolean
 }
 
 export interface BundleData {
   bundle: FhirResource
   resources: FhirResource[]
   validation: ValidationReport
+  isCached: boolean
 }
 
 export interface AgentAnswer {

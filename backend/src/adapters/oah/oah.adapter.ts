@@ -1,3 +1,7 @@
+import { randomUUID } from 'node:crypto'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
 import type { OahCity, OahMetricRecord, OahSite, OahSnapshot, OahSourceError } from '../../types/domain.js'
 
@@ -23,12 +27,23 @@ const metricRecordSchema = z.object({
   samplingDate: z.string().nullable().optional(),
 }).passthrough()
 
+const snapshotSchema = z.object({
+  cities: z.array(citySchema),
+  sites: z.array(siteSchema),
+  healthRisks: z.array(metricRecordSchema),
+  urbanParameters: z.array(metricRecordSchema),
+  sourceErrors: z.array(z.object({ endpoint: z.string(), message: z.string() })),
+  retrievedAt: z.string().min(1),
+})
+
 const endpointPaths = {
   cities: '/api/cities/all',
   sites: '/api/sites/all',
   healthRisks: '/api/resilience-map/health-risks',
   urbanParameters: '/api/resilience-map/urban-parameters',
 } as const
+
+const defaultSnapshotCachePath = resolve(dirname(fileURLToPath(import.meta.url)), '../../../.cache/oah-snapshot.json')
 
 export class OahUnavailableError extends Error {
   constructor(message: string) {
@@ -43,7 +58,11 @@ export class OahAdapter {
   private cachedSnapshot?: OahSnapshot
   private cacheExpiresAt = 0
 
-  constructor(baseUrl = process.env.OAH_API_BASE_URL ?? 'https://api.enora-oah.eu', timeoutMs = 10_000) {
+  constructor(
+    baseUrl = process.env.OAH_API_BASE_URL ?? 'https://api.enora-oah.eu',
+    timeoutMs = 10_000,
+    private readonly snapshotCachePath = defaultSnapshotCachePath,
+  ) {
     this.baseUrl = baseUrl.replace(/\/$/, '')
     this.timeoutMs = timeoutMs
   }
@@ -62,6 +81,12 @@ export class OahAdapter {
 
     if (citiesResult.status === 'rejected' || sitesResult.status === 'rejected') {
       const reason = citiesResult.status === 'rejected' ? citiesResult.reason : sitesResult.status === 'rejected' ? sitesResult.reason : null
+      const cachedSnapshot = await this.readCachedSnapshot()
+      if (cachedSnapshot) {
+        this.cachedSnapshot = cachedSnapshot
+        this.cacheExpiresAt = Date.now() + 60_000
+        return cachedSnapshot
+      }
       throw new OahUnavailableError(reason instanceof Error ? reason.message : 'Required OneAquaHealth site data is unavailable.')
     }
 
@@ -80,6 +105,7 @@ export class OahAdapter {
       sourceErrors,
       retrievedAt: new Date().toISOString(),
     }
+    await this.writeCachedSnapshot(snapshot)
     this.cachedSnapshot = snapshot
     this.cacheExpiresAt = Date.now() + 60_000
     return snapshot
@@ -87,6 +113,28 @@ export class OahAdapter {
 
   getEndpointUrl(path: string): string {
     return `${this.baseUrl}${path}`
+  }
+
+  private async readCachedSnapshot(): Promise<OahSnapshot | undefined> {
+    try {
+      const cached: unknown = JSON.parse(await readFile(this.snapshotCachePath, 'utf8'))
+      const parsed = snapshotSchema.safeParse(cached)
+      return parsed.success ? { ...parsed.data, isCached: true } : undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  private async writeCachedSnapshot(snapshot: OahSnapshot): Promise<void> {
+    const temporaryPath = `${this.snapshotCachePath}.${process.pid}.${randomUUID()}.tmp`
+    try {
+      await mkdir(dirname(this.snapshotCachePath), { recursive: true })
+      await writeFile(temporaryPath, JSON.stringify(snapshot, null, 2), 'utf8')
+      await rename(temporaryPath, this.snapshotCachePath)
+    } catch (error) {
+      await rm(temporaryPath, { force: true }).catch(() => undefined)
+      console.warn('Could not update the local OAH snapshot cache:', error instanceof Error ? error.message : 'unknown error')
+    }
   }
 
   private async getArray<T>(path: string, schema: z.ZodType<T>): Promise<T[]> {

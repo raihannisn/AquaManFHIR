@@ -1,8 +1,10 @@
 import { ArrowUpRight, BookOpen, CheckCircle2, CircleAlert, Code2, Database, ExternalLink, MapPin, MessageSquareText, Radio, RefreshCw, ShieldCheck, Waves } from 'lucide-react'
 import { FileText, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { PageHeading } from '../components/ui'
+import { EmptyState, LoadingState, PageHeading } from '../components/ui'
 import { api, type DocumentationPage as DocumentationContent, type RuntimeHealth, type SiteListData } from '../services/api'
+
+const sourceApiEndpoints = ['/api/cities/all', '/api/sites/all', '/api/resilience-map/health-risks', '/api/resilience-map/urban-parameters']
 
 export function DataSourcesPage() {
   const [data, setData] = useState<SiteListData | null>(null)
@@ -10,12 +12,23 @@ export function DataSourcesPage() {
   useEffect(() => { api.getSites().then(setData).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'Source status could not be retrieved.')) }, [])
   const healthAvailable = !data?.sourceErrors.some((item) => item.endpoint.includes('health-risks'))
   const urbanAvailable = !data?.sourceErrors.some((item) => item.endpoint.includes('urban-parameters'))
+  const sitesStatus = getSourceStatus(data, true)
+  const healthStatus = getSourceStatus(data, healthAvailable)
+  const urbanStatus = getSourceStatus(data, urbanAvailable)
   return <>
-    <PageHeading eyebrow="INTEGRATIONS / VERIFIED ACCESS" title="Data sources" description="Runtime connectivity and access limits established during inspection of OneAquaHealth's public apps and API traffic." action={data && <span className="source-stamp"><span className="live-dot" />SYNCED {new Date(data.retrievedAt).toLocaleTimeString()}</span>} />
+    <PageHeading eyebrow="INTEGRATIONS / PUBLIC SOURCE DISCOVERY" title="Data sources" description="Current request status and access limits documented during inspection of OneAquaHealth's public apps and API traffic." action={data && <span className="source-stamp"><span className={data.isCached ? 'source-state-dot source-state-partial' : 'live-dot'} />{data.isCached ? 'CACHED SNAPSHOT' : 'RETRIEVED'} {new Date(data.retrievedAt).toLocaleTimeString()}</span>} />
     {error && <div className="alert alert-danger">{error}</div>}
-    <div className="source-cards-grid"><SourceCard icon={<MapPin size={19} />} name="Research sites" status={data ? 'LIVE' : 'CHECKING'} statusTone={data ? 'live' : 'review'} record={data ? `${data.recordCounts.sites} sites · ${data.recordCounts.cities} cities` : 'Loading source count…'} endpoint="GET /api/sites/all" detail="Site code, name, city, coordinates and altitude from the public Resilience Map API." /><SourceCard icon={<Waves size={19} />} name="Health & ecosystem risk" status={data ? healthAvailable ? 'LIVE' : 'UNAVAILABLE' : 'CHECKING'} statusTone={data ? healthAvailable ? 'live' : 'off' : 'review'} record={data ? `${data.recordCounts.healthRiskRecords} records` : 'Loading source count…'} endpoint="GET /api/resilience-map/health-risks" detail="Sampling date and scaled pathogen, faecal, ARG and health risk values." /><SourceCard icon={<Radio size={19} />} name="Urban parameters" status={data ? urbanAvailable ? 'LIVE' : 'UNAVAILABLE' : 'CHECKING'} statusTone={data ? urbanAvailable ? 'live' : 'off' : 'review'} record={data ? `${data.recordCounts.urbanParameterRecords} records` : 'Loading source count…'} endpoint="GET /api/resilience-map/urban-parameters" detail="Distances, vegetation, density, urban and impervious-surface indicators." /><SourceCard icon={<Database size={19} />} name="Citizen Science App" status="LOGIN REQUIRED" statusTone="off" record="No public endpoint verified" endpoint="apps.oneaquahealth.eu/login" detail="The official app points to sign-in. No unauthenticated observations API or schema was found." /><SourceCard icon={<Code2 size={19} />} name="OAH FHIR guidance" status="NOT FOUND" statusTone="review" record="No profile contract verified" endpoint="Public project pages inspected" detail="Resources use standard FHIR R4 types; no OAH profile conformance is claimed." /></div>
-    <section className="panel-card mt-3"><div className="panel-heading"><div><div className="eyebrow">LIVE INTEGRATION</div><h2>Official Resilience Map API</h2></div><span className="badge-status badge-live">4 ENDPOINTS VERIFIED</span></div><div className="endpoint-list">{['/api/cities/all', '/api/sites/all', '/api/resilience-map/health-risks', '/api/resilience-map/urban-parameters'].map((endpoint) => <div className="endpoint-row" key={endpoint}><span className="http-method">GET</span><code>https://api.enora-oah.eu{endpoint}</code><CheckCircle2 size={15} className="endpoint-ok" /></div>)}</div><div className="panel-footer-note">The API responses returned HTTP 200 from the official map app on 2026-10-01. No public API reference, version guarantee, or unit catalogue was located.</div></section>
+    {!data && !error && <LoadingState message="Checking OneAquaHealth source availability..." />}
+    {data?.items.length === 0 && <EmptyState title="No research sites returned" detail="The source response contains no sites to summarize." />}
+    <div className="source-cards-grid"><SourceCard icon={<MapPin size={19} />} name="Research sites" status={sitesStatus.label} statusTone={sitesStatus.tone} record={data ? `${data.recordCounts.sites} sites · ${data.recordCounts.cities} cities` : 'Loading source count…'} endpoint="GET /api/sites/all" detail="Site code, name, city, coordinates and altitude from the public Resilience Map API." /><SourceCard icon={<Waves size={19} />} name="Health & ecosystem risk" status={healthStatus.label} statusTone={healthStatus.tone} record={data ? `${data.recordCounts.healthRiskRecords} records` : 'Loading source count…'} endpoint="GET /api/resilience-map/health-risks" detail="Sampling date and scaled pathogen, faecal, ARG and health risk values." /><SourceCard icon={<Radio size={19} />} name="Urban parameters" status={urbanStatus.label} statusTone={urbanStatus.tone} record={data ? `${data.recordCounts.urbanParameterRecords} records` : 'Loading source count…'} endpoint="GET /api/resilience-map/urban-parameters" detail="Distances, vegetation, density, urban and impervious-surface indicators." /><SourceCard icon={<Database size={19} />} name="Citizen Science App" status="LOGIN REQUIRED" statusTone="off" record="No public endpoint verified" endpoint="apps.oneaquahealth.eu/login" detail="The official app points to sign-in. No unauthenticated observations API or schema was found." /><SourceCard icon={<Code2 size={19} />} name="OAH FHIR guidance" status="NOT FOUND" statusTone="review" record="No profile contract verified" endpoint="Public project pages inspected" detail="Resources use standard FHIR R4 types; no OAH profile conformance is claimed." /></div>
+    <section className="panel-card mt-3"><div className="panel-heading"><div><div className="eyebrow">UPSTREAM INTEGRATION</div><h2>Official Resilience Map API</h2></div><span className="badge-status badge-generated">{sourceApiEndpoints.length} ENDPOINTS OBSERVED</span></div><div className="endpoint-list">{sourceApiEndpoints.map((endpoint) => <div className="endpoint-row" key={endpoint}><span className="http-method">GET</span><code>https://api.enora-oah.eu{endpoint}</code><CheckCircle2 size={15} className="endpoint-ok" /></div>)}</div><div className="panel-footer-note">The API returned HTTP 200 from the official map app on 2026-10-01. No public API reference, version guarantee, or unit catalogue was located.</div></section>
   </>
+}
+
+function getSourceStatus(data: SiteListData | null, available: boolean): { label: string; tone: string } {
+  if (!data) return { label: 'CHECKING', tone: 'review' }
+  if (data.isCached) return { label: 'CACHED', tone: 'warning' }
+  return available ? { label: 'AVAILABLE', tone: 'live' } : { label: 'UNAVAILABLE', tone: 'off' }
 }
 
 function SourceCard({ icon, name, status, statusTone, record, endpoint, detail }: { icon: React.ReactNode; name: string; status: string; statusTone: string; record: string; endpoint: string; detail: string }) {
@@ -24,7 +37,7 @@ function SourceCard({ icon, name, status, statusTone, record, endpoint, detail }
 
 const endpoints = [
   ['GET', '/api/health', 'Report backend readiness and non-secret runtime configuration.'],
-  ['GET', '/api/sites', 'List live OneAquaHealth research sites and available record counts.'],
+  ['GET', '/api/sites', 'Retrieve the public OneAquaHealth site catalogue and available record counts.'],
   ['GET', '/api/sites/:id', 'Retrieve site detail, raw records and source provenance.'],
   ['GET', '/api/sites/:id/observations', 'Return normalized environmental observation values.'],
   ['GET', '/api/sites/:id/citizen-observations', 'Report that citizen-science data is not publicly connected.'],
@@ -52,17 +65,23 @@ export function ApiPage() {
 export function DocumentationPage() {
   const [selected, setSelected] = useState('')
   const [document, setDocument] = useState<DocumentationContent | null>(null)
+  const [documentLoading, setDocumentLoading] = useState(false)
   const [error, setError] = useState('')
   useEffect(() => {
     let active = true
-    if (!selected) { setDocument(null); setError(''); return () => { active = false } }
-    api.getDocumentation(selected).then((result) => { if (active) setDocument(result) }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : 'Document could not be loaded.') })
+    if (!selected) { setDocument(null); setError(''); setDocumentLoading(false); return () => { active = false } }
+    setDocument(null); setError(''); setDocumentLoading(true)
+    api.getDocumentation(selected).then((result) => { if (active) setDocument(result) })
+      .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : 'Document could not be loaded.') })
+      .finally(() => { if (active) setDocumentLoading(false) })
     return () => { active = false }
   }, [selected])
   return <>
     <PageHeading eyebrow="IMPLEMENTATION NOTES / TRACK 7" title="Documentation" description="System behavior, mapping decisions, setup, and explicit integration limitations." />
     <div className="doc-link-grid"><DocLink title="OAH data discovery" path="oah-data-discovery.md" icon={<Database size={18} />} detail="Verified endpoints, field structures, observed counts, and source limitations." onSelect={setSelected} /><DocLink title="Architecture" path="architecture.md" icon={<Code2 size={18} />} detail="Layer boundaries, normalized models, FHIR mapping, validation, and security." onSelect={setSelected} /><DocLink title="Data flow" path="data-flow.md" icon={<RefreshCw size={18} />} detail="OAH adapter through normalized FHIR to downstream API and AI tools." onSelect={setSelected} /><DocLink title="FHIR mapping" path="fhir-mapping.md" icon={<ShieldCheck size={18} />} detail="Source fields, normalized values, FHIR elements, and mapping behavior." onSelect={setSelected} /><DocLink title="API contract" path="api.md" icon={<Radio size={18} />} detail="Routes, request examples, success/error envelopes, and AI interface." onSelect={setSelected} /><DocLink title="AI agent" path="ai-agent.md" icon={<MessageSquareText size={18} />} detail="Gemini trust boundary, tools, and grounding policy." onSelect={setSelected} /><DocLink title="Setup" path="setup.md" icon={<RefreshCw size={18} />} detail="Requirements, environment, run commands, and verification." onSelect={setSelected} /><DocLink title="Limitations" path="limitations.md" icon={<CircleAlert size={18} />} detail="What is connected, unavailable, and required before production." onSelect={setSelected} /></div>
     {error && <div className="alert alert-danger mt-3">{error}</div>}
+    {documentLoading && <LoadingState message="Loading project document..." />}
+    {selected && !documentLoading && !document && !error && <EmptyState title="Document is empty" detail="No content was returned for the selected document." />}
     {document && <section className="panel-card doc-viewer mt-3"><div className="panel-heading"><div><div className="eyebrow">PROJECT DOCUMENTATION</div><h2><FileText size={16} /> {document.name}</h2></div><button className="icon-action" onClick={() => setSelected('')} aria-label="Close document"><X size={15} /></button></div><pre>{document.content}</pre></section>}
     <section className="panel-card mt-3"><div className="panel-heading"><div><div className="eyebrow">SYSTEM PRINCIPLE</div><h2>Preserve evidence, do not infer it</h2></div><BookOpen size={18} className="heading-icon" /></div><p className="documentation-callout">Source field names, record identifiers, endpoint URLs, and original numeric values stay traceable through normalization and FHIR output. Missing units or sampling dates remain missing and appear as data-quality warnings.</p><a className="text-link" href="https://apps.oneaquahealth.eu/resmap/" target="_blank" rel="noreferrer">Open official Resilience Map <ExternalLink size={14} /></a></section>
   </>

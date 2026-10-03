@@ -10,6 +10,7 @@ describe('controlled AI tools', () => {
         items: [{ sourceRecordId: '21:healthRiskScore' }],
         retrievedAt: '2026-10-01T00:00:00.000Z',
         sourceErrors: [],
+        isCached: true,
       }),
       getCitizenObservations: vi.fn().mockResolvedValue({ items: [], available: false, message: 'Citizen-science observations are not available from the connected public source.' }),
     } as unknown as AquaManFhirService
@@ -21,6 +22,7 @@ describe('controlled AI tools', () => {
 
     expect(fakeService.getObservations).toHaveBeenCalledWith('C1')
     expect(observations.sources).toEqual(['21:healthRiskScore'])
+    expect(observations.result).toMatchObject({ isCached: true })
     expect(unavailable.result).toMatchObject({ available: false, items: [] })
     expect(unsupported.result).toMatchObject({ error: 'Tool is not available.' })
     expect(unsupported.sources).toEqual([])
@@ -43,6 +45,25 @@ describe('controlled AI tools', () => {
     expect(error.status).toBe(503)
     expect(error.message).toContain('retry shortly')
     expect(error.diagnostic).toContain('UNAVAILABLE')
+  })
+
+  it('redacts the configured fake key and common Google key shapes from provider diagnostics', () => {
+    const previousKey = process.env.GEMINI_API_KEY
+    const configuredFakeKey = 'configured-test-secret-value-0123456789'
+    const aiStudioFakeKey = ['AIza', 'FAKE_KEY_12345678901234567890'].join('')
+    const alternateFakeKey = ['AQ.', 'FAKE_PROVIDER_KEY_12345678901234567890'].join('')
+    try {
+      process.env.GEMINI_API_KEY = configuredFakeKey
+      const error = new GeminiProviderError('fake-model', `denied ${configuredFakeKey}; google ${aiStudioFakeKey}; alternate ${alternateFakeKey}`)
+
+      expect(error.diagnostic).not.toContain(configuredFakeKey)
+      expect(error.diagnostic).not.toContain(aiStudioFakeKey)
+      expect(error.diagnostic).not.toContain(alternateFakeKey)
+      expect(error.diagnostic.match(/\[REDACTED\]/g)).toHaveLength(3)
+    } finally {
+      if (previousKey === undefined) delete process.env.GEMINI_API_KEY
+      else process.env.GEMINI_API_KEY = previousKey
+    }
   })
 
   it('uses the stable fallback once when the primary model is busy before tool execution', async () => {
