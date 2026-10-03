@@ -1,5 +1,7 @@
 import type { FhirResource, NormalizedObservation, NormalizedSite } from '../types/domain.js'
 
+export const sourceFieldCodeSystemUrl = 'https://aquamanfhir.example/fhir/CodeSystem/oah-source-field'
+
 function toFhirDateTime(value: string): string {
   const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value)
   return value.includes('T') && !hasTimezone ? value.slice(0, 10) : value
@@ -29,10 +31,29 @@ export function mapObservation(observation: NormalizedObservation): FhirResource
     meta: { source: observation.source },
     identifier: [{ system: observation.source, value: observation.sourceRecordId }],
     status: 'unknown',
-    code: { text: observation.indicator },
+    code: {
+      coding: [{ system: sourceFieldCodeSystemUrl, code: observation.originalField, display: observation.displayName }],
+      text: observation.indicator,
+    },
     valueQuantity: { value: observation.value },
     subject: { reference: `Location/${observation.siteId}` },
     ...(observation.observedAt ? { effectiveDateTime: toFhirDateTime(observation.observedAt) } : {}),
+  }
+}
+
+export function mapSourceFieldCodeSystem(observations: NormalizedObservation[]): FhirResource {
+  const concepts = new Map<string, string>()
+  observations.forEach((observation) => concepts.set(observation.originalField, observation.displayName))
+  return {
+    resourceType: 'CodeSystem',
+    id: 'oah-source-field',
+    url: sourceFieldCodeSystemUrl,
+    name: 'AquaManFHROahSourceField',
+    title: 'AquaManFHIR OAH source fields',
+    status: 'active',
+    content: 'fragment',
+    description: 'Project-local codes for observed OneAquaHealth source field names. The example.org canonical is a non-resolvable placeholder, not an official OAH terminology system.',
+    concept: [...concepts].map(([code, display]) => ({ code, display })),
   }
 }
 

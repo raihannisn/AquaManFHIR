@@ -4,6 +4,7 @@ dist/
 **/dist/
 coverage/
 **/coverage/
+backend/.cache/
 .env
 .env.*
 !.env.example

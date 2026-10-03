@@ -2,7 +2,7 @@ import { Bot, CircleHelp, SendHorizontal, ShieldCheck, Sparkles, Wrench } from '
 import { useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { useSearchParams } from 'react-router-dom'
-import { ErrorState, PageHeading } from '../components/ui'
+import { EmptyState, ErrorState, LoadingState, PageHeading } from '../components/ui'
 import { api, type AgentAnswer, type Site } from '../services/api'
 
 const suggestedQuestions = [
@@ -24,6 +24,7 @@ interface ConversationItem {
 export function AIAgentPage() {
   const [searchParams] = useSearchParams()
   const [sites, setSites] = useState<Site[]>([])
+  const [sitesLoading, setSitesLoading] = useState(true)
   const [siteId, setSiteId] = useState(searchParams.get('site') ?? '')
   const [draft, setDraft] = useState('')
   const [messages, setMessages] = useState<ConversationItem[]>([])
@@ -31,7 +32,13 @@ export function AIAgentPage() {
   const [error, setError] = useState('')
   const [activity, setActivity] = useState<AgentAnswer | null>(null)
   const threadRef = useRef<HTMLDivElement>(null)
-  useEffect(() => { api.getSites().then((data) => { setSites(data.items); setSiteId((current) => current || data.items[0]?.id || '') }).catch(() => setError('The live OneAquaHealth site list is unavailable.')) }, [])
+  useEffect(() => {
+    let active = true
+    api.getSites().then((data) => { if (active) { setSites(data.items); setSiteId((current) => current || data.items[0]?.id || '') } })
+      .catch(() => { if (active) setError('The OneAquaHealth site list is unavailable.') })
+      .finally(() => { if (active) setSitesLoading(false) })
+    return () => { active = false }
+  }, [])
   useEffect(() => { threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' }) }, [messages, busy])
   async function ask(question = draft) {
     const text = question.trim()
@@ -47,8 +54,9 @@ export function AIAgentPage() {
     } finally { setBusy(false) }
   }
   return <>
-    <PageHeading eyebrow="CONTROLLED TOOL AGENT / GEMINI" title="One Health AI Agent" description="Ask questions about connected OneAquaHealth source records and generated FHIR resources. Answers are grounded in backend tool results." action={<label className="select-control"><span className="select-label">SITE</span><select value={siteId} onChange={(event) => setSiteId(event.target.value)} aria-label="Select site">{sites.map((site) => <option key={site.id} value={site.id}>{site.id} · {site.name}</option>)}</select></label>} />
+    <PageHeading eyebrow="CONTROLLED TOOL AGENT / GEMINI" title="One Health AI Agent" description="Ask questions about connected OneAquaHealth source records and generated FHIR resources. Answers are grounded in backend tool results." action={<label className="select-control"><span className="select-label">SITE</span><select value={siteId} disabled={sitesLoading || sites.length === 0} onChange={(event) => setSiteId(event.target.value)} aria-label="Select site">{sitesLoading && <option value="">Loading sites...</option>}{!sitesLoading && sites.length === 0 && <option value="">No sites available</option>}{sites.map((site) => <option key={site.id} value={site.id}>{site.id} · {site.name}</option>)}</select></label>} />
     {error && <ErrorState message={error} />}
+    {sitesLoading && <LoadingState message="Loading site catalogue..." />}
     <div className="agent-layout">
       <aside className="agent-history panel-card">
         <div className="eyebrow">SESSION</div>
@@ -60,7 +68,7 @@ export function AIAgentPage() {
       <section className="agent-conversation panel-card">
         <div className="conversation-header"><div className="agent-avatar"><Bot size={18} /></div><div><strong>AquaManFHIR Data Agent</strong><small><span className="live-dot" /> Grounded responses · selected site {siteId || '—'}</small></div><span className="provider-mark">GEMINI</span></div>
         <div className="conversation-thread" ref={threadRef}>
-          {messages.length === 0 && <div className="agent-welcome"><span className="welcome-icon"><Sparkles size={20} /></span><h2>Query connected data</h2><p>Ask about a site or FHIR resource. Source identifiers and tool activity are shown separately.</p><div className="prompt-list">{suggestedQuestions.map((prompt) => <button key={prompt} onClick={() => void ask(prompt)} disabled={busy}><span>{prompt}</span><SendHorizontal size={14} /></button>)}</div></div>}
+          {messages.length === 0 && <div className="agent-welcome"><span className="welcome-icon"><Sparkles size={20} /></span><h2>Query connected data</h2><p>Ask about a site or FHIR resource. Source identifiers and tool activity are shown separately.</p>{!sitesLoading && sites.length === 0 ? <EmptyState title="No sites available" detail="The connected source returned no research sites to query." /> : !sitesLoading && <div className="prompt-list">{suggestedQuestions.map((prompt) => <button key={prompt} onClick={() => void ask(prompt)} disabled={busy}><span>{prompt}</span><SendHorizontal size={14} /></button>)}</div>}</div>}
           {messages.map((message, index) => <div className={`message-row message-${message.role}`} key={`${message.timestamp}-${index}`}>
             <div className="message-avatar">{message.role === 'agent' ? <Bot size={15} /> : 'R'}</div>
             <div className="message-content">

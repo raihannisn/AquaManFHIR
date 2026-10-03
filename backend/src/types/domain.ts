@@ -34,6 +34,7 @@ export interface OahSnapshot {
   urbanParameters: OahMetricRecord[]
   sourceErrors: OahSourceError[]
   retrievedAt: string
+  isCached?: boolean
 }
 
 export interface NormalizedSite {

@@ -14,6 +14,12 @@ export class ResourceRepository {
     return resource ? structuredClone(resource) : undefined
   }
 
+  getAll(resourceType?: string): FhirResource[] {
+    return [...this.resources.values()]
+      .filter((resource) => resourceType === undefined || resource.resourceType === resourceType)
+      .map((resource) => structuredClone(resource))
+  }
+
   getBySite(siteId: string): FhirResource[] {
     return [...this.resources.values()]
       .filter((resource) => resource.resourceType === 'Location' && resource.id === siteId ||

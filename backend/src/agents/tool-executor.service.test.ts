@@ -10,6 +10,7 @@ describe('controlled AI tools', () => {
         items: [{ sourceRecordId: '21:healthRiskScore' }],
         retrievedAt: '2026-10-01T00:00:00.000Z',
         sourceErrors: [],
+        isCached: true,
       }),
       getCitizenObservations: vi.fn().mockResolvedValue({ items: [], available: false, message: 'Citizen-science observations are not available from the connected public source.' }),
     } as unknown as AquaManFhirService
@@ -21,6 +22,7 @@ describe('controlled AI tools', () => {
 
     expect(fakeService.getObservations).toHaveBeenCalledWith('C1')
     expect(observations.sources).toEqual(['21:healthRiskScore'])
+    expect(observations.result).toMatchObject({ isCached: true })
     expect(unavailable.result).toMatchObject({ available: false, items: [] })
     expect(unsupported.result).toMatchObject({ error: 'Tool is not available.' })
     expect(unsupported.sources).toEqual([])
