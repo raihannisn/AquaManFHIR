@@ -46,10 +46,11 @@ Requirements: Node.js 20.11+ and npm. From the project root:
 ```sh
 npm install
 copy .env.example .env
+npm run check:secrets
 npm run dev
 ```
 
-The API listens on `http://localhost:3001`; Vite runs on `http://localhost:5173` and proxies `/api` to the backend. `GEMINI_API_KEY` is optional for the rest of the application and required only for agent requests. The API's source snapshot cache is written under the ignored `backend/.cache/` directory.
+Secrets live only in `.env`; do not commit or share that file. Run `npm run check:secrets` to scan Git-tracked files for common key shapes before pushing. The API listens on `http://localhost:3001`; Vite runs on `http://localhost:5173` and proxies `/api` to the backend. `GEMINI_API_KEY` is optional for the rest of the application and required only for agent requests. The API's source snapshot cache is written under the ignored `backend/.cache/` directory.
 
 ## Environment
 

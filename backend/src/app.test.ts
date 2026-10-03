@@ -1,5 +1,6 @@
 import request from 'supertest'
 import { describe, expect, it, vi } from 'vitest'
+import { AiAgentService, GeminiProviderError } from './agents/ai-agent.service.js'
 import { app, aquaManFhir } from './app.js'
 import type { FhirResource, ValidationReport } from './types/domain.js'
 
@@ -162,6 +163,21 @@ describe('API envelope and validation routes', () => {
     })
   })
 
+  it('returns an OperationOutcome error when the FHIR resourceType does not match the endpoint', async () => {
+    const response = await request(app)
+      .post('/fhir/Location/$validate')
+      .set('Content-Type', 'application/fhir+json')
+      .send({ resourceType: 'Observation', id: 'obs-1', status: 'final' })
+    expect(response.status).toBe(400)
+    expect(response.headers['content-type']).toContain('application/fhir+json')
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [expect.objectContaining({ severity: 'error', code: 'invalid' })],
+    })
+    expect(response.body.issue[0].diagnostics).toContain('Location')
+    expect(response.body.issue[0].diagnostics).toContain('Observation')
+  })
+
   it('returns OperationOutcome errors and warnings for an invalid FHIR $validate request', async () => {
     const response = await request(app)
       .post('/fhir/Observation/$validate')
@@ -288,6 +304,34 @@ describe('API envelope and validation routes', () => {
       expect(response.body).toMatchObject({ success: false, data: null, error: { code: 'GEMINI_NOT_CONFIGURED' } })
     } finally {
       if (originalKey !== undefined) process.env.GEMINI_API_KEY = originalKey
+    }
+  })
+
+  it('redacts fake Gemini key shapes from provider HTTP errors and logs', async () => {
+    const previousKey = process.env.GEMINI_API_KEY
+    const configuredFakeKey = 'configured-test-secret-value-0123456789'
+    const aiStudioFakeKey = ['AIza', 'FAKE_KEY_12345678901234567890'].join('')
+    const alternateFakeKey = ['AQ.', 'FAKE_PROVIDER_KEY_12345678901234567890'].join('')
+    process.env.GEMINI_API_KEY = configuredFakeKey
+    const query = vi.spyOn(AiAgentService.prototype, 'query').mockRejectedValue(
+      new GeminiProviderError('fake-model', `403 denied ${configuredFakeKey} ${aiStudioFakeKey} ${alternateFakeKey}`),
+    )
+    const logger = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      const response = await request(app).post('/api/ai/query').send({ message: 'Check source data' })
+      const responseBody = JSON.stringify(response.body)
+      const logOutput = JSON.stringify(logger.mock.calls)
+
+      expect(response.status).toBe(502)
+      for (const fakeKey of [configuredFakeKey, aiStudioFakeKey, alternateFakeKey]) {
+        expect(responseBody).not.toContain(fakeKey)
+        expect(logOutput).not.toContain(fakeKey)
+      }
+    } finally {
+      query.mockRestore()
+      logger.mockRestore()
+      if (previousKey === undefined) delete process.env.GEMINI_API_KEY
+      else process.env.GEMINI_API_KEY = previousKey
     }
   })
 })

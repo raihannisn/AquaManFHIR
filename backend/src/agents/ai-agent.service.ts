@@ -49,8 +49,18 @@ export class GeminiProviderError extends Error {
     super(message)
     this.name = 'GeminiProviderError'
     this.status = isTemporarilyUnavailable ? 503 : 502
-    this.diagnostic = providerMessage.replace(/AIza[0-9A-Za-z_-]{20,}/g, '[REDACTED]')
+    this.diagnostic = redactProviderSecrets(providerMessage)
   }
+}
+
+export function redactProviderSecrets(providerMessage: string): string {
+  const configuredKey = process.env.GEMINI_API_KEY
+  const exactKeyRedacted = configuredKey
+    ? providerMessage.split(configuredKey).join('[REDACTED]')
+    : providerMessage
+  return exactKeyRedacted
+    .replace(/\bAIza[0-9A-Za-z_-]{20,}\b/g, '[REDACTED]')
+    .replace(/\bAQ\.[A-Za-z0-9_-]{20,}\b/g, '[REDACTED]')
 }
 
 function errorMessage(error: unknown): string {

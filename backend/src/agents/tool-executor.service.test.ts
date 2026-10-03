@@ -47,6 +47,25 @@ describe('controlled AI tools', () => {
     expect(error.diagnostic).toContain('UNAVAILABLE')
   })
 
+  it('redacts the configured fake key and common Google key shapes from provider diagnostics', () => {
+    const previousKey = process.env.GEMINI_API_KEY
+    const configuredFakeKey = 'configured-test-secret-value-0123456789'
+    const aiStudioFakeKey = ['AIza', 'FAKE_KEY_12345678901234567890'].join('')
+    const alternateFakeKey = ['AQ.', 'FAKE_PROVIDER_KEY_12345678901234567890'].join('')
+    try {
+      process.env.GEMINI_API_KEY = configuredFakeKey
+      const error = new GeminiProviderError('fake-model', `denied ${configuredFakeKey}; google ${aiStudioFakeKey}; alternate ${alternateFakeKey}`)
+
+      expect(error.diagnostic).not.toContain(configuredFakeKey)
+      expect(error.diagnostic).not.toContain(aiStudioFakeKey)
+      expect(error.diagnostic).not.toContain(alternateFakeKey)
+      expect(error.diagnostic.match(/\[REDACTED\]/g)).toHaveLength(3)
+    } finally {
+      if (previousKey === undefined) delete process.env.GEMINI_API_KEY
+      else process.env.GEMINI_API_KEY = previousKey
+    }
+  })
+
   it('uses the stable fallback once when the primary model is busy before tool execution', async () => {
     const generate = vi.fn(async (model: string) => {
       if (model === 'gemini-3.8-flash') throw new Error('503 UNAVAILABLE')

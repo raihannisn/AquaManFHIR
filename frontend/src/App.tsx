@@ -17,7 +17,7 @@ const navigation = [
   { label: 'FHIR Resources', to: '/fhir', icon: Files },
   { label: 'Validation', to: '/validation', icon: FileCheck2 },
   { label: 'AI Agent', to: '/agent', icon: MessageSquareText },
-  { label: 'FHIR API', to: '/api', icon: Braces },
+  { label: 'FHIR API', to: '/fhir-api', icon: Braces },
   { label: 'Documentation', to: '/documentation', icon: BookOpen },
   { label: 'Settings', to: '/settings', icon: Settings },
 ]
@@ -82,5 +82,5 @@ function Shell() {
 }
 
 export default function App() {
-  return <Routes><Route element={<Shell />}><Route index element={<OverviewPage />} /><Route path="data-sources" element={<DataSourcesPage />} /><Route path="sites" element={<SitesPage />} /><Route path="sites/:siteId" element={<SiteWorkspacePage />} /><Route path="observations" element={<ObservationsPage />} /><Route path="fhir" element={<FhirPage />} /><Route path="validation" element={<ValidationPage />} /><Route path="agent" element={<AIAgentPage />} /><Route path="api" element={<ApiPage />} /><Route path="documentation" element={<DocumentationPage />} /><Route path="settings" element={<SettingsPage />} /><Route path="*" element={<Navigate to="/" replace />} /></Route></Routes>
+  return <Routes><Route element={<Shell />}><Route index element={<OverviewPage />} /><Route path="data-sources" element={<DataSourcesPage />} /><Route path="sites" element={<SitesPage />} /><Route path="sites/:siteId" element={<SiteWorkspacePage />} /><Route path="observations" element={<ObservationsPage />} /><Route path="fhir" element={<FhirPage />} /><Route path="validation" element={<ValidationPage />} /><Route path="agent" element={<AIAgentPage />} /><Route path="fhir-api" element={<ApiPage />} /><Route path="documentation" element={<DocumentationPage />} /><Route path="settings" element={<SettingsPage />} /><Route path="*" element={<Navigate to="/" replace />} /></Route></Routes>
 }

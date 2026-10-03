@@ -194,10 +194,15 @@ app.get('/fhir/Provenance', async (request, response) => {
 })
 
 app.post(String.raw`/fhir/:resourceType/\$validate`, express.json({ type: 'application/fhir+json', limit: '1mb' }), (request, response) => {
-  if (!supportedFhirResourceTypes.includes(request.params.resourceType as typeof supportedFhirResourceTypes[number])) {
-    return sendFhirOutcome(response, 404, 'not-found', `FHIR resource type ${request.params.resourceType} is not available.`)
+  const endpointType = request.params.resourceType
+  if (!supportedFhirResourceTypes.includes(endpointType as typeof supportedFhirResourceTypes[number])) {
+    return sendFhirOutcome(response, 404, 'not-found', `FHIR resource type ${endpointType} is not available.`)
   }
-  return sendFhir(response, validationOutcome(aquaManFhir.validateResource(request.body)))
+  const requestBody = request.body
+  if (requestBody && typeof requestBody === 'object' && 'resourceType' in requestBody && typeof requestBody.resourceType === 'string' && requestBody.resourceType !== endpointType) {
+    return sendFhirOutcome(response, 400, 'invalid', `Resource type "${requestBody.resourceType}" does not match the endpoint type "${endpointType}".`)
+  }
+  return sendFhir(response, validationOutcome(aquaManFhir.validateResource(requestBody)))
 })
 
 app.get('/fhir/CodeSystem/oah-source-field', async (_request, response) => {
