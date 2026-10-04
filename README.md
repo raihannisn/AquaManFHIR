@@ -50,7 +50,7 @@ npm run check:secrets
 npm run dev
 ```
 
-Secrets live only in `.env`; do not commit or share that file. Run `npm run check:secrets` to scan Git-tracked files for common key shapes before pushing. The API listens on `http://localhost:3001`; Vite runs on `http://localhost:5173` and proxies `/api` to the backend. `GEMINI_API_KEY` is optional for the rest of the application and required only for agent requests. The API's source snapshot cache is written under the ignored `backend/.cache/` directory.
+Secrets live only in `.env`; do not commit or share that file. Run `npm run check:secrets` to scan Git-tracked files for common key shapes before pushing. The API listens on `http://localhost:3001`; Vite runs on `http://localhost:5173` and proxies `/api` and `/fhir` to the backend. `GEMINI_API_KEY` is optional for the rest of the application and required only for agent requests. The API's source snapshot cache is written under the ignored `backend/.cache/` directory.
 
 ## Try the FHIR API
 
@@ -71,6 +71,8 @@ Site IDs are the research site codes returned by `GET http://localhost:3001/api/
 See [.env.example](.env.example). `OAH_API_BASE_URL` defaults to the observed `https://api.enora-oah.eu`; the upstream has not published a stability guarantee. `DATABASE_URL` is reserved for future structured persistence. The latest successful source snapshot is cached on disk; generated FHIR resources remain in memory and are cleared when the backend restarts.
 
 ## Demo flow
+
+For a timed Indonesian narration and on-screen cues, see the [demo script](docs/demo-script.md).
 
 1. Open the sites catalogue and check the source status before choosing an OAH research site.
 2. Inspect the raw source records and their provenance.
