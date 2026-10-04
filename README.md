@@ -45,12 +45,26 @@ Requirements: Node.js 20.11+ and npm. From the project root:
 
 ```sh
 npm install
-copy .env.example .env
+copy .env.example .env      # Windows. On macOS/Linux use: cp .env.example .env
 npm run check:secrets
 npm run dev
 ```
 
 Secrets live only in `.env`; do not commit or share that file. Run `npm run check:secrets` to scan Git-tracked files for common key shapes before pushing. The API listens on `http://localhost:3001`; Vite runs on `http://localhost:5173` and proxies `/api` to the backend. `GEMINI_API_KEY` is optional for the rest of the application and required only for agent requests. The API's source snapshot cache is written under the ignored `backend/.cache/` directory.
+
+## Try the FHIR API
+
+With the backend running (`npm run dev`), any FHIR client can call the standard endpoints directly, without the web interface:
+
+```sh
+# CapabilityStatement: supported resources, searches and the $validate operation
+curl http://localhost:3001/fhir/metadata
+
+# Observations for one research site (returns a searchset Bundle)
+curl "http://localhost:3001/fhir/Observation?subject=Location/<site-id>&_count=3"
+```
+
+Site IDs are the research site codes returned by `GET http://localhost:3001/api/sites`. On Windows PowerShell use `curl.exe` instead of `curl`, or open the URLs in a browser. The `$validate` operation accepts a resource at `POST /fhir/Observation/$validate` and returns an `OperationOutcome`.
 
 ## Environment
 
@@ -71,6 +85,15 @@ See [.env.example](.env.example). `OAH_API_BASE_URL` defaults to the observed `h
 npm test
 npm run build
 ```
+
+## Limitations
+
+- Prototype: no authentication or rate limiting. Do not expose it publicly without an access-control boundary.
+- Generated FHIR resources are kept in memory and cleared on restart. Only the latest source snapshot is cached on disk.
+- No public endpoint for citizen-science observations is documented, so none are used.
+- The source supplies no measurement units, and some records have no sampling date. Both are reported as validation warnings and are never filled in.
+- There are no official OAH FHIR profiles; terminology bindings and profiles are not validated.
+- Risk values are shown as published. They are not interpreted, and the project is not for clinical use.
 
 ## Future work
 
