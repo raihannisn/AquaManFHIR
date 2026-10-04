@@ -9,6 +9,19 @@ Target duration: about 4 minutes. This script follows the implemented applicatio
 - Configure Gemini if you plan to include the AI segment. Do not show `.env` or the API key.
 - Prepare site `C1` (Exploratorio), or another site with available indicator data.
 
+## Recording timeline and clicks
+
+The six segments below total exactly 4:00. Keep the narration moving while each screen is visible; avoid waiting on long network requests during the recording.
+
+| Time | Duration | Screen and actions |
+| --- | ---: | --- |
+| 0:00-0:35 | 35 sec | **Overview:** Stay on the Overview page. Point out the source status and site map; no page change needed. |
+| 0:35-1:05 | 30 sec | **Sites:** Click **Sites** in the left navigation. Search for `C1`, then click the arrow at the end of its row to open the site workspace. |
+| 1:05-1:45 | 40 sec | **C1 workspace:** Show **Raw OAH records**, **Mapped observations**, and **Provenance**. These sections are on the same page. |
+| 1:45-2:40 | 55 sec | **FHIR conversion:** Click **Convert to FHIR**. Click the **Location**, **Observation**, and **Provenance** resource tabs; point to validation. Click **Export Bundle**, then **Download JSON**. Wait for the browser's **Downloads** icon to show completion; open it briefly to show `oah-site-C1.json`, then return to the app. |
+| 2:40-3:20 | 40 sec | **FHIR Resources:** Click the left navigation item and select `C1` if needed. Click **CapabilityStatement**; return to the app tab, open one resource with its external-link icon, then return and click **Open this site's FHIR Observation search**. |
+| 3:20-4:00 | 40 sec | **AI Agent:** Click **AI Agent**, select `C1` if needed, then click **What observations are available for this site?** Wait for the answer, show **Agent activity** and **Source identifiers**, and deliver the closing sentence. |
+
 ## Script
 
 ### 0:00-0:35 | Problem and concept

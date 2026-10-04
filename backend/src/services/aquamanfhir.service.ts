@@ -60,7 +60,7 @@ export class AquaManFhirService {
   }
 
   async getCitizenObservations(): Promise<{ items: never[]; available: false; message: string }> {
-    return { items: [], available: false, message: 'Citizen-science observations are not available from the connected public source.' }
+    return { items: [], available: false, message: 'Citizen-science observations are not integrated into this prototype; upstream endpoints are documented, but access requirements have not been verified.' }
   }
 
   async convertSite(siteId: string): Promise<{ resources: FhirResource[]; validation: ValidationReport; normalized: NormalizedObservation[]; isCached: boolean } | null> {

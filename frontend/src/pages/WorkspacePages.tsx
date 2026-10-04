@@ -46,9 +46,15 @@ export function SiteWorkspacePage() {
   const [observations, setObservations] = useState<Observation[]>([])
   const [conversion, setConversion] = useState<ConversionData | null>(null)
   const [bundle, setBundle] = useState<BundleData | null>(null)
+  const [downloadNotice, setDownloadNotice] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState<'convert' | 'bundle' | ''>('')
   const [activeResource, setActiveResource] = useState(0)
+  useEffect(() => {
+    if (!downloadNotice) return
+    const timeout = window.setTimeout(() => setDownloadNotice(''), 4000)
+    return () => window.clearTimeout(timeout)
+  }, [downloadNotice])
   useEffect(() => {
     let active = true
     setDetail(null)
@@ -77,13 +83,16 @@ export function SiteWorkspacePage() {
   }
   function downloadBundle() {
     if (!bundle) return
+    const filename = `oah-site-${siteId}.json`
     const url = URL.createObjectURL(new Blob([JSON.stringify(bundle.bundle, null, 2)], { type: 'application/fhir+json' }))
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = `oah-site-${siteId}.json`; document.body.appendChild(anchor); anchor.click(); anchor.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename; document.body.appendChild(anchor); anchor.click(); anchor.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    setDownloadNotice(filename)
   }
   if (!detail && !error) return <LoadingState message={`Loading OneAquaHealth site ${siteId}...`} />
   return <>
     <PageHeading eyebrow="INTEROPERABILITY WORKSPACE / OAH SOURCE DATA" title={detail?.site.name ?? `Site ${siteId}`} description={`${detail?.site.cityName ?? detail?.site.cityId ?? 'Research site'} · Source ID ${siteId} · ${detail?.site.latitude?.toFixed(5) ?? '—'}, ${detail?.site.longitude?.toFixed(5) ?? '—'}`} action={<span className="source-stamp">ONEAQUAHEALTH</span>} />
     {error && <ErrorState message={error} />}
+    {downloadNotice && <div className="download-toast" role="status" aria-live="polite"><Check size={16} /><span>Bundle download started: <strong>{downloadNotice}</strong></span></div>}
     {detail && <>
       <div className="workspace-toolbar"><div className="toolbar-meta"><span className="site-code">{siteId}</span><span>Retrieved {new Date(detail.retrievedAt).toLocaleString()}</span>{detail.site.altitude !== undefined && <span>Altitude {detail.site.altitude} m</span>}</div><div className="d-flex flex-wrap gap-2"><button className="btn btn-primary action-button" onClick={convert} disabled={busy !== ''}><WandSparkles size={16} />{busy === 'convert' ? 'Converting…' : 'Convert to FHIR'}</button><button className="btn btn-outline-secondary action-button" onClick={() => navigate(`/agent?site=${encodeURIComponent(siteId)}`)}><Sparkles size={15} />Ask AI</button><button className="btn btn-outline-secondary action-button" onClick={createBundle} disabled={busy !== ''}><ArrowDownToLine size={15} />Export Bundle</button>{bundle && <button className="btn btn-outline-secondary action-button icon-only" onClick={downloadBundle} title="Download FHIR Bundle" aria-label="Download FHIR Bundle"><Download size={16} /></button>}</div></div>
       {bundle && <div className="bundle-export-state"><Check size={15} />Bundle created with {bundle.resources.length} resources · {bundle.validation.status}<button className="text-button" onClick={downloadBundle}>Download JSON</button></div>}

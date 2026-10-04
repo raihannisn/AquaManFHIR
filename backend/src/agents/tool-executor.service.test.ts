@@ -12,7 +12,7 @@ describe('controlled AI tools', () => {
         sourceErrors: [],
         isCached: true,
       }),
-      getCitizenObservations: vi.fn().mockResolvedValue({ items: [], available: false, message: 'Citizen-science observations are not available from the connected public source.' }),
+      getCitizenObservations: vi.fn().mockResolvedValue({ items: [], available: false, message: 'Citizen-science observations are not integrated into this prototype; upstream endpoints are documented, but access requirements have not been verified.' }),
     } as unknown as AquaManFhirService
     const tools = new ToolExecutorService(fakeService)
 

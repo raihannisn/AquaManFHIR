@@ -19,7 +19,7 @@ The adapter calls the four public endpoints observed in the official OneAquaHeal
 - `https://api.enora-oah.eu/api/resilience-map/health-risks`
 - `https://api.enora-oah.eu/api/resilience-map/urban-parameters`
 
-The four endpoints and example record counts documented in [data discovery](docs/oah-data-discovery.md) were observed on 2026-10-01; they are not a current-count guarantee or a versioned API contract. A successful snapshot is also saved locally at `backend/.cache/oah-snapshot.json`. If a required live catalogue request later fails and that file is valid, the API serves it with `isCached: true`; the UI shows its retrieval time and warns that the live source is unreachable. Citizen-science observations, water colour/flow data, health/wellbeing records, and public OAH FHIR profiles are not verified and are not fabricated.
+The four endpoints and example record counts documented in [data discovery](docs/oah-data-discovery.md) were observed on 2026-10-01; they are not a current-count guarantee or a versioned API contract. A successful snapshot is also saved locally at `backend/.cache/oah-snapshot.json`. If a required live catalogue request later fails and that file is valid, the API serves it with `isCached: true`; the UI shows its retrieval time and warns that the live source is unreachable. The official OpenAPI documentation lists Citizen Science endpoints and response DTOs, but this prototype has not integrated them or verified access requirements. Citizen records, health/wellbeing data, and official OAH FHIR profiles are not part of the verified data flow; values and meanings are not fabricated.
 
 ## Architecture and mapping
 
@@ -33,7 +33,7 @@ Researchers, environmental and public-health analysts, data stewards, and applic
 
 ## Privacy & security
 
-The OAH fields currently used are public site and environmental data; no person-level or citizen-observation data has been identified or connected. The prototype has no authentication or authorization and should not be exposed publicly without an access-control boundary. The Gemini API key is read only by the backend and is never returned to the browser. The local snapshot cache contains the same source data and is excluded from Git.
+The connected OAH fields are public site and environmental data; no person-level or citizen-submission records are ingested. The official OpenAPI documents citizen endpoints, but their access requirements and data-use permissions must be verified before integration. The prototype has no authentication or authorization and should not be exposed publicly without an access-control boundary. The Gemini API key is read only by the backend and is never returned to the browser. The local snapshot cache contains the same source data and is excluded from Git.
 
 ## Gemini agent
 
@@ -92,11 +92,11 @@ npm run build
 
 - Prototype: no authentication or rate limiting. Do not expose it publicly without an access-control boundary.
 - Generated FHIR resources are kept in memory and cleared on restart. Only the latest source snapshot is cached on disk.
-- No public endpoint for citizen-science observations is documented, so none are used.
+- Citizen-science endpoints and response DTOs are documented in the official OpenAPI, but access and authorization are not verified and the prototype does not use them.
 - The source supplies no measurement units, and some records have no sampling date. Both are reported as validation warnings and are never filled in.
 - There are no official OAH FHIR profiles; terminology bindings and profiles are not validated.
 - Risk values are shown as published. They are not interpreted, and the project is not for clinical use.
 
 ## Future work
 
-Obtain a supported OAH API contract, citizen-science access/schema, measurement unit metadata, and official FHIR profiles. Add persistent storage, authentication, endpoint monitoring, broader integration tests, and profile-aware validation after those contracts are available.
+Confirm permitted access and authorization for the documented citizen-science endpoints; obtain measurement-unit metadata and official FHIR profiles. Add persistent storage, authentication, endpoint monitoring, broader integration tests, and profile-aware validation after those contracts are available.

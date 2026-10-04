@@ -63,7 +63,7 @@ export function AIAgentPage() {
         <h2>Research queries</h2>
         <button className="history-item active"><span className="history-indicator"><MessageIcon /></span><span><strong>Current session</strong><small>{messages.length} exchanges</small></span></button>
         <div className="agent-safety"><ShieldCheck size={17} /><span>Backend tools only<small>No direct database or OAH access by the model</small></span></div>
-        <div className="agent-source-hint"><strong>CONNECTED SOURCE</strong><small>api.enora-oah.eu</small><small>Citizen observations are unavailable.</small></div>
+        <div className="agent-source-hint"><strong>CONNECTED SOURCE</strong><small>api.enora-oah.eu</small><small>Citizen observations are not integrated.</small></div>
       </aside>
       <section className="agent-conversation panel-card">
         <div className="conversation-header"><div className="agent-avatar"><Bot size={18} /></div><div><strong>AquaManFHIR Data Agent</strong><small><span className="live-dot" /> Grounded responses · selected site {siteId || '—'}</small></div><span className="provider-mark">GEMINI</span></div>

@@ -16,7 +16,7 @@ FHIR REST reads under `/fhir` are the exception: they return the FHIR resource d
 | `GET` | `/api/sites` | OAH sites, city metadata, record counts, retrieval time, and `isCached` status |
 | `GET` | `/api/sites/:id` | Site details, source records, provenance, and `isCached` status |
 | `GET` | `/api/sites/:id/observations` | Normalized risk/urban observations and `isCached` status |
-| `GET` | `/api/sites/:id/citizen-observations` | Explicitly reports unavailable source data; never fabricates records |
+| `GET` | `/api/sites/:id/citizen-observations` | Reports that citizen records are not integrated into this prototype; never fabricates records |
 | `POST` | `/api/fhir/convert/site/:id` | Convert available records to Location, Observation, and Provenance resources; includes `isCached` |
 | `GET` | `/api/fhir/resources/:id` | Retrieve a generated resource by ID |
 | `POST` | `/api/fhir/validate` | Validate a supplied/generated resource |
@@ -43,6 +43,8 @@ FHIR REST reads under `/fhir` are the exception: they return the FHIR resource d
 `POST /api/fhir/convert/site/C1` returns `data.resources`, `data.validation`, and `data.isCached`. Resources are also stored in the in-memory prototype repository for subsequent inspection. Each conversion includes FHIR Provenance with retrieval time, source identifiers, target references, and the AquaManFHIR adapter. The server does not assert OAH profile conformance.
 
 FHIR endpoints return resources directly with `Content-Type: application/fhir+json`; FHIR request errors return `OperationOutcome` rather than the application envelope.
+
+The official OneAquaHealth OpenAPI documents Citizen Science observation endpoints and response DTOs. AquaManFHIR has not integrated them or verified their authentication and access requirements; `/api/sites/:id/citizen-observations` describes this prototype's current integration state, not the availability of upstream OAH endpoints.
 
 `GET /fhir/Location?_count=5` returns a `searchset` Bundle of locations generated from the available snapshot. `GET /fhir/Observation?subject=Location/C1&_count=5` converts the site on demand and returns its Observations in a `searchset` Bundle. `subject` may be omitted to search already-generated Observations. `GET /fhir/Provenance?target=Location/C1&_count=5` filters generated provenance by target; a Location target is converted on demand. Search Bundles include `total`, `link[self]`, and entries with `fullUrl` and `resource`; `_count` limits returned entries.
 

@@ -1,15 +1,17 @@
 # OneAquaHealth Data Discovery
 
-Checked on 2026-10-01 against the official OneAquaHealth Resilience Map and the API requests made by that application.
+The Resilience Map requests below were checked on 2026-10-01. The official OpenAPI documentation was reviewed on 2026-10-04.
 
 ## Official entry points
 
 - Project portal: https://www.oneaquahealth.eu/project-solutions/
 - Public Resilience Map: https://apps.oneaquahealth.eu/resmap/
 - Citizen Science App: https://apps.oneaquahealth.eu/login
+- Official API documentation: https://api.enora-oah.eu/swagger-ui/index.html
+- OpenAPI document: https://api.enora-oah.eu/v3/api-docs
 - Citizen Science guide: https://www.oneaquahealth.eu/app/uploads/2025/07/OneAquaHealth-Guide-A4-Citizen-Science-App-Installation-0.4.pdf
 
-The portal describes City Dashboards, a Resilience Map, and a Citizen Science App. The Citizen Science App entry point requires login. The public Resilience Map exposed the API requests below during browser inspection. No public API reference, OpenAPI document, authentication contract, or OAH FHIR profile/guidance was found during this discovery.
+The portal describes City Dashboards, a Resilience Map, and a Citizen Science App. The Citizen Science App entry point offers sign-in and sign-up. Its OpenAPI documentation lists Citizen Science endpoints, including `GET /api/citizens/submissions`, `GET /api/citizens/stream_assessments`, single-submission reads, and reference endpoints for water-flow and water-colour types. The documented responses use DTO schemas such as `CitizenSubmissionGetDTO` and `StreamAssessmentDTO`. The specification also lists `POST /api/auth/login`, which returns a JWT; it does not establish whether citizen-read endpoints are callable without authentication or what access permissions apply. AquaManFHIR has not queried or integrated citizen submissions. No OAH-specific FHIR endpoint, profile, or terminology guidance was identified in the API documentation reviewed.
 
 ## Verified API requests
 
@@ -35,8 +37,8 @@ Example urban record contained numeric distances and environmental context indic
 - The API did not provide units, code systems, metric definitions, or FHIR profiles in the observed payloads. Do not invent LOINC/SNOMED codes, units, or clinical meaning. Use explicit source-field text labels and warnings for unmapped terminology.
 - A null `samplingDate` means no effective date can be mapped. Do not substitute retrieval time as the measurement time.
 - Risk scores are environmental/ecosystem indicators, not patient health measurements. No person, patient, diagnosis, or clinical recommendation data was observed.
-- No citizen-observation/questionnaire endpoint or water colour/flow fields were observed in the official app's API requests. Do not implement these as live data without further verification and access authorization.
+- Citizen-observation endpoints and DTOs are documented in OpenAPI, but they were not part of the Resilience Map requests observed on 2026-10-01 and are not integrated here. Verify authentication, authorization, data-use permissions, and actual payload semantics before using them. The documented water-flow and water-colour endpoints provide reference types; they are not evidence that citizen submissions have been retrieved.
 
 ## Limitations and follow-up
 
-The endpoint paths and payloads are verified from requests made by the official app, but there is no public API contract or stated stability/version guarantee in the pages inspected. The current MVP adapter should time out cleanly, validate response shapes, retain the source URL and retrieval timestamp as provenance, and surface endpoint failures instead of returning demo fixtures. Recheck with OneAquaHealth maintainers before treating the endpoints as a supported integration. FHIR output should use standard R4 `Location`, `Observation`, and `Bundle` resources, but no OAH-specific profile conformance can be claimed until official guidance is obtained.
+The four Resilience Map endpoint paths and payloads are verified from requests made by the official app. An OpenAPI document is also available, but no stability/version guarantee or citizen-endpoint access policy was identified. The current MVP adapter should time out cleanly, validate response shapes, retain source URLs and retrieval timestamps as provenance, and surface endpoint failures instead of returning demo fixtures. Confirm citizen-endpoint access with OneAquaHealth before integrating submissions. FHIR output uses standard R4 resources, but no OAH-specific profile conformance can be claimed until official guidance is obtained.
